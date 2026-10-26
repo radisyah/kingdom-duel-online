@@ -1,0 +1,12 @@
+{
+  "name": "kingdom-duel-online",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KINGDOM DUEL Online. Duel strategi + matematika 2 pemain; gameplay langsung antar-perangkat (WebRTC), pensinyalan & relay di Vercel + Upstash Redis.",
+  "scripts": {
+    "dev": "node dev-server.js",
+    "test": "node test/api.test.js",
+    "test:e2e": "node test/e2e.js"
+  },
+  "engines": { "node": ">=20" }
+}
