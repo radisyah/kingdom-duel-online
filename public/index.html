@@ -340,7 +340,7 @@ html,body{overscroll-behavior:none}
     flex-wrap:nowrap;gap:6px;padding:0;pointer-events:auto}
   #controls .btn{min-height:40px;min-width:42px;padding:4px 9px;font-size:15px;flex:none}
   #controls .lbl{display:none}
-  #overlay{top:var(--hudh,48px);left:calc(var(--pw) + 12px);right:calc(var(--pw) + 12px);bottom:52px!important;padding:4px}
+  #overlay{top:var(--hudh,48px);left:calc(var(--pw) + 12px);right:calc(var(--pw) + 12px);bottom:var(--ch,52px)!important;padding:4px}
   #overlay .card{padding:12px;max-width:none}
   .duo{grid-template-columns:1fr}
   #count-num{font-size:52px;margin:2px 0 6px}
@@ -394,6 +394,75 @@ body.spectator #overlay{left:8px;right:8px}
   body.online.me-p1 #overlay{right:8px}
   body.online.me-p2 #overlay{left:8px}
 }
+
+/* ===== Tahap 8: HP Android — tanpa scroll, nyaman dimainkan ===== */
+html,body{height:var(--app-h,100%);max-height:var(--app-h,100%);overflow:hidden;position:fixed;inset:0;width:100%}
+@supports (height:100dvh){html,body{height:var(--app-h,100dvh);max-height:var(--app-h,100dvh)}}
+.screen,#arena{height:var(--app-h,100%)}
+#screen-game,#screen-menu{overflow:hidden}
+#screen-menu{overflow:auto;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+.q-time{white-space:nowrap}
+@media (max-width:700px){
+  .bar b{text-align:right;padding-right:8px}
+  .p2 .bar b{text-align:left;padding-left:8px;padding-right:0}
+  .q-text{text-overflow:clip}
+}
+@media (max-width:700px) and (orientation:portrait){
+  .pcard{padding:5px 7px}
+  .keypad .pad-btn{min-height:38px}.pad-btn{min-height:38px}
+  .qbox{padding:4px 7px 5px}
+  #controls .btn{min-height:40px}
+  #screen-menu .menu-box{gap:12px}
+  #screen-menu .btn{min-height:44px}
+}
+@media (max-height:640px) and (orientation:portrait){
+  .keypad .pad-btn,.pad-btn{min-height:34px}
+  .q-ans{min-height:20px;line-height:20px;font-size:17px}
+  .ucard{padding:1px}.u-ico{width:16px;height:16px}
+  #controls .btn{min-height:36px}
+}
+
+/* Ponsel landscape (mode utama untuk 2 pemain): panel lebih ramping, kontrol tidak menimpa keypad */
+@media (orientation:landscape) and (max-height:520px){
+  :root{--pw:clamp(206px,30vw,300px);--ch:48px}
+  #controls{gap:4px;bottom:max(3px,env(safe-area-inset-bottom))}
+  #controls .btn{min-width:38px;min-height:38px;padding:2px 7px;font-size:15px;box-shadow:0 3px 0 #1d1433,0 5px 10px rgba(0,0,0,.35)}
+  #controls .btn:first-child{box-shadow:0 3px 0 #7a5410,0 5px 10px rgba(0,0,0,.35)}
+  #controls .btn.danger{box-shadow:0 3px 0 #5c1212,0 5px 10px rgba(0,0,0,.35)}
+  #overlay{bottom:var(--ch,48px)!important;left:calc(var(--pw) + 8px);right:calc(var(--pw) + 8px);padding:2px}
+  body.online.me-p1 #overlay{right:6px}body.online.me-p2 #overlay{left:6px}
+  /* layar "ARENA SIAP" muat tanpa scroll */
+  #ov-ready{padding:8px 10px;overflow:hidden}
+  #ov-ready h2{font-size:15px;margin-bottom:4px}
+  #ov-ready .vs-row,#ov-ready .hint{display:none}
+  #ov-ready .duo{gap:4px;margin-bottom:6px}
+  #ov-ready .slot{padding:4px 6px;gap:2px}
+  #ov-ready .slot label{font-size:9px}
+  #ov-ready .slot input{padding:4px 6px;font-size:13px}
+  #ov-ready .badge{font-size:11px}
+  #ov-ready .btn{min-height:38px;padding:6px 12px;font-size:14px}
+  #ov-count,#ov-pause,#ov-result{padding:8px 10px}
+  #ov-pause p{display:none}
+  #ov-pause .stack{gap:6px}#ov-pause .btn{min-height:36px;padding:4px 10px;font-size:13px}
+  #ov-result .stack{gap:6px}#ov-result .btn{min-height:36px;padding:4px 10px;font-size:13px}
+  #ov-result h2{font-size:20px;margin-bottom:2px}
+  .res-reason{font-size:11px;margin-bottom:4px}
+}
+/* layar landscape sempit: tombol kontrol disusun 3×2 di bawah arena */
+@media (orientation:landscape) and (max-height:520px) and (max-width:720px){
+  :root{--ch:84px}
+  #controls{display:grid;grid-template-columns:repeat(3,auto);justify-content:center}
+}
+@media (orientation:landscape) and (max-height:340px){
+  #ov-ready h2,#ov-count p{display:none}
+  #ov-ready .slot label{display:none}
+  #count-num{font-size:44px}
+}
+
+/* Petunjuk putar layar (hanya portrait saat main lokal 2 pemain di ponsel) */
+#rotate-hint{position:fixed;left:50%;bottom:calc(max(70px,env(safe-area-inset-bottom)) + 4px);transform:translateX(-50%);z-index:25;display:none;
+  padding:8px 14px;border-radius:12px;background:rgba(20,14,34,.94);border:2px solid var(--gold);font-size:12px;font-weight:800;text-align:center;pointer-events:none}
+@media (max-width:700px) and (orientation:portrait){body:not(.online) #rotate-hint.on{display:block}}
 </style>
 </head>
 <body>
@@ -447,6 +516,7 @@ body.spectator #overlay{left:8px;right:8px}
   </div>
 </main>
 <div id="toast" class="hidden" role="status"></div>
+<div id="rotate-hint">&#8635; Putar HP ke mode landscape untuk main berdua</div>
 
 <!-- ===== LAYAR PERTANDINGAN ===== -->
 <section id="screen-game" class="screen hidden">
@@ -1269,7 +1339,9 @@ const Renderer = {
         const r1 = UI.el.pad.p1.getBoundingClientRect(), r2 = UI.el.pad.p2.getBoundingClientRect();   // ponsel landscape: panel di kiri-kanan arena
         a.left = r1.width ? r1.right : 0;                         // online: panel lawan disembunyikan (lebar 0)
         a.right = r2.width ? r2.left : this.w;
-        a.bottom = this.h - 52;
+        const cr = document.getElementById('controls').getBoundingClientRect();
+        a.bottom = cr.height ? cr.top - 2 : this.h - 52;
+        root.setProperty('--ch', Math.ceil(this.h - cr.top + 2) + 'px');
         root.setProperty('--hudh', hud.bottom + 'px');
       } else {
         a.bottom = this.botEl.getBoundingClientRect().top;
@@ -1280,8 +1352,10 @@ const Renderer = {
   },
   resize() {
     this.dpr = Math.min(window.devicePixelRatio || 1, 2);
-    this.w = window.innerWidth;
-    this.h = window.innerHeight;
+    const vv = window.visualViewport;
+    this.w = Math.round(window.innerWidth);
+    this.h = Math.round(vv && vv.height ? Math.min(vv.height, window.innerHeight) : window.innerHeight);
+    document.documentElement.style.setProperty('--app-h', this.h + 'px');
     this.canvas.width = Math.round(this.w * this.dpr);
     this.canvas.height = Math.round(this.h * this.dpr);
     this.measure();
@@ -3371,6 +3445,37 @@ Game.init();
 Online.initFromUrl();                                           // tautan undangan ?r=KODE → langsung ke lobi
 if (/[?&]debug\b/.test(location.search)) window.__kd = { State, Game, Online, Units, Cfg, Quiz, UI };   // hanya untuk tes
 requestAnimationFrame(frame);
+})();
+</script>
+<script>
+/* Android: layar penuh + kunci landscape saat game dimulai, tinggi mengikuti viewport (bar alamat), tanpa scroll */
+(() => {
+  const coarse = () => window.matchMedia && matchMedia('(pointer:coarse)').matches;
+  const rh = document.getElementById('rotate-hint');
+  const refit = () => window.dispatchEvent(new Event('resize'));
+  if (window.visualViewport) visualViewport.addEventListener('resize', refit);
+  const enter = (lockLand) => {
+    if (!coarse()) return;
+    const el = document.documentElement;
+    let p = Promise.resolve();
+    try { if (!document.fullscreenElement && el.requestFullscreen) p = el.requestFullscreen({ navigationUI: 'hide' }); } catch (_) {}
+    Promise.resolve(p).then(() => {
+      if (lockLand && screen.orientation && screen.orientation.lock) return screen.orientation.lock('landscape');
+    }).catch(() => {}).then(() => setTimeout(refit, 150));
+  };
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest && e.target.closest('[data-action]');
+    if (!b) return;
+    const a = b.dataset.action;
+    if (a === 'play') { enter(true); if (rh && coarse()) { rh.classList.add('on'); setTimeout(() => rh.classList.remove('on'), 4500); } }
+    else if (a === 'on-create' || a === 'on-join' || a === 'on-watch') enter(false);
+    else if (a === 'menu') { try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (_) {} if (rh) rh.classList.remove('on'); }
+  }, true);
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement) { try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (_) {} }
+    setTimeout(refit, 150);
+  });
+  window.addEventListener('orientationchange', () => { setTimeout(refit, 200); if (rh && !matchMedia('(orientation:portrait)').matches) rh.classList.remove('on'); });
 })();
 </script>
 </body>
