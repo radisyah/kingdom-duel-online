@@ -15,6 +15,10 @@ Satu perangkat = satu pemain. Pembuat ruangan = Pemain 1 (Biru), yang bergabung 
 - Di online tidak ada Jeda/Mulai Ulang. Tombol **Menu** (tekan 2×) = keluar ruangan. **Rematch**: bisa diminta salah satu pemain, host yang memulai.
 - Kontrol online: keyboard (skema P1 **dan** P2 sama-sama aktif untuk pemain di perangkat itu) atau sentuh. Hanya panel milikmu yang tampil.
 
+## Room Master (penonton)
+Satu orang ketiga bisa **menonton** Pemain 1 vs Pemain 2: **Main Online → Masuk sebagai Room Master** + kode ruangan, atau pakai **Tautan Room Master** (`?r=KODE&role=master`) dari host.
+Ia tersambung langsung ke host (P2P, relay bila gagal), melihat arena, pasukan, HP benteng, dan energi kedua pemain, bisa masuk di tengah pertandingan, tidak punya kontrol, dan bisa diganti orang lain bila keluar. HP benteng tiap kerajaan = 500 (`Cfg.MAX_HP`).
+
 ## Deploy ke Vercel
 1. Upload folder ini ke GitHub → di Vercel **Add New → Project**, pilih repo (preset **Other**, tanpa build command; `vercel.json` sudah mengatur `public/` dan `api/room.js`).
 2. **Storage / Marketplace → Upstash Redis** → hubungkan ke proyek (mengisi `KV_REST_API_URL` / `KV_REST_API_TOKEN` atau `UPSTASH_REDIS_REST_*`). Lalu **Redeploy**.
@@ -26,7 +30,7 @@ Satu perangkat = satu pemain. Pembuat ruangan = Pemain 1 (Biru), yang bergabung 
 ```bash
 node dev-server.js        # http://localhost:3000 (penyimpanan memori, tanpa Redis)
 npm test                  # 17 tes API pensinyalan
-# e2e: 2 browser sungguhan (WebRTC + jalur relay):  npm i playwright && npx playwright install chromium && node test/e2e.js
+# e2e: host + tamu + Room Master sungguhan (WebRTC + jalur relay):  npm i playwright && npx playwright install chromium && node test/e2e.js
 ```
 Tambahkan `?debug=1` di URL untuk membuka objek `window.__kd` (dipakai tes e2e).
 
@@ -34,4 +38,3 @@ Tambahkan `?debug=1` di URL untuk membuka objek `window.__kd` (dipakai tes e2e).
 - Host dipercaya untuk dunia; tiap perangkat dipercaya untuk soal/energinya sendiri (cukup untuk duel antar-teman, bukan anti-cheat).
 - Tidak ada sambung-ulang di tengah pertandingan: bila koneksi putus, kembali ke lobi (bila sudah di layar hasil, hasil tetap terlihat).
 - Simulasi dunia berhenti bila tab host disembunyikan (browser menghentikan animasi); biarkan tab host tetap terbuka.
-- Belum ada mode penonton (Room Master) seperti di Number Bomber; endpoint `api/room.js` sudah mendukungnya bila ingin ditambah.

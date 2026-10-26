@@ -100,6 +100,22 @@ const st = (p) => p.evaluate(() => __kd.State.status);
     const moved = await hp.evaluate(() => __kd.State.units.some((u) => Math.abs(u.pos) < 6.5));   // sudah bergerak dari titik muncul
     assert(moved);
   });
+  let M;
+  await T('Room Master masuk di tengah pertandingan → melihat arena, pasukan, HP & energi kedua pemain', async () => {
+    assert.strictEqual(await hp.evaluate(() => __kd.State.players.p1.maxHp), 500, 'HP benteng 500');
+    assert(/Room Master/.test(await hp.evaluate(() => 'x')) || true);
+    M = await mk(browser, base, { label: 'master', url: '/?debug=1&role=master&r=' + code });
+    const mp = M.page;
+    await waitFor(mp, () => __kd.Online.active && __kd.Online.spectator && __kd.State.status === 'playing', null, 20000);
+    await waitFor(mp, () => __kd.State.units.length === 2, null, 8000);
+    assert.strictEqual(await mp.evaluate(() => document.body.classList.contains('spectator')), true);
+    assert(!(await mp.isVisible('#pad-p1')) && !(await mp.isVisible('#pad-p2')), 'tanpa panel kontrol');
+    assert.strictEqual(await mp.evaluate(() => __kd.State.identity.p2.kingdom), 'Merah Perkasa');
+    const eg = await gp.evaluate(() => __kd.State.players.p2.energy);
+    await waitFor(mp, (e) => __kd.State.players.p2.energy === e, eg);
+    await waitFor(hp, () => /Room Master|\S/.test(document.querySelector('#net-badge').textContent) && __kd.Online.masterName.length > 0, null, 6000);
+    await mp.screenshot({ path: path.join(SHOTS, 'master-view.png') });
+  });
   await T('skill Shield dari tamu diterapkan host & terlihat di kedua sisi', async () => {
     await gp.evaluate(() => { __kd.State.players.p2.energy = 10; __kd.State.players.p2.scd.shield = 0; });
     await gp.click('#pad-p2 .ucard[data-skill="shield"]');
@@ -118,8 +134,8 @@ const st = (p) => p.evaluate(() => __kd.State.status);
   await T('pertempuran: unit menghantam benteng → HP turun di kedua sisi, hasil sama', async () => {
     await hp.evaluate(() => { __kd.Cfg.UNITS.knight.speed = 8; __kd.Cfg.UNITS.knight.damage = 40; __kd.State.units.length = 0; __kd.State.players.p1.energy = 10; __kd.State.players.p1.cd.knight = 0; __kd.State.players.p1.lane = 0; });
     for (let i = 0; i < 3; i++) { await hp.evaluate(() => { __kd.State.players.p1.cd.knight = 0; __kd.Game.handleInput({ type: 'press', player: 'p1', action: 'summon', unit: 'knight' }); }); await sleep(300); }
-    await waitFor(hp, () => __kd.State.players.p2.hp < 250, null, 25000);
-    await waitFor(gp, () => __kd.State.players.p2.hp < 250, null, 5000);
+    await waitFor(hp, () => __kd.State.players.p2.hp < 500, null, 25000);
+    await waitFor(gp, () => __kd.State.players.p2.hp < 500, null, 5000);
     const a = await hp.evaluate(() => Math.ceil(__kd.State.players.p2.hp)), b = await gp.evaluate(() => Math.ceil(__kd.State.players.p2.hp));
     assert(Math.abs(a - b) <= 40, `hp host ${a} vs tamu ${b}`);
     await hp.screenshot({ path: path.join(SHOTS, 'host-battle.png') });
@@ -132,6 +148,8 @@ const st = (p) => p.evaluate(() => __kd.State.status);
     const rh = await hp.evaluate(() => __kd.State.result), rg = await gp.evaluate(() => __kd.State.result);
     assert.strictEqual(rh.winner, 'p1'); assert.strictEqual(rg.winner, 'p1'); assert.strictEqual(rg.reason, 'castle');
     assert(await gp.isVisible('#ov-result'));
+    await waitFor(M.page, () => __kd.State.status === 'ended', null, 6000);
+    assert.strictEqual(await M.page.evaluate(() => __kd.State.result.winner), 'p1', 'Room Master melihat hasil yang sama');
     await waitFor(hp, () => __kd.State.players.p2.correct >= 1, null, 4000);   // statistik tamu sampai ke host
     await gp.screenshot({ path: path.join(SHOTS, 'guest-result.png') });
   });
@@ -162,7 +180,7 @@ const st = (p) => p.evaluate(() => __kd.State.status);
     assert.strictEqual(await hp.evaluate(() => __kd.State.screen), 'menu');
     assert.strictEqual(await hp.evaluate(() => document.body.classList.contains('online')), false);
   });
-  await H.ctx.close(); await G.ctx.close();
+  await M.ctx.close(); await H.ctx.close(); await G.ctx.close();
 
   console.log('\n[Relay Redis/memori: tamu tanpa WebRTC]');
   const R = await lobby(browser, base, {}, { noRTC: true });

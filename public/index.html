@@ -382,6 +382,8 @@ body.online .offline-only{display:none!important}
 body.online #btn-pause,body.online #btn-restart,body.online #btn-start{display:none}
 body.online.me-p1 #pad-p2,body.online.me-p2 #pad-p1{display:none}
 .slot input[readonly]{opacity:.75}
+body.spectator #pads,body.spectator #btn-ready,body.spectator [data-action="rematch"]{display:none!important}
+body.spectator #overlay{left:8px;right:8px}
 @media not all and (orientation:landscape) and (max-height:520px){
   body.online #pads{display:flex;justify-content:center}
   body.online .pad{flex:1 1 auto;max-width:640px;min-width:0}
@@ -428,13 +430,16 @@ body.online.me-p1 #pad-p2,body.online.me-p2 #pad-p1{display:none}
         <input id="on-code" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="KODE" aria-label="Kode ruangan">
         <button class="btn secondary" id="on-join" data-action="on-join">Gabung</button>
       </div>
+      <button class="btn secondary wide" id="on-watch" data-action="on-watch">&#128065; Masuk sebagai Room Master (menonton)</button>
     </div>
     <div id="on-wait" class="stack hidden">
       <p class="on-msg" id="on-wait-msg">Menunggu lawan bergabung&hellip;</p>
       <div class="on-code" id="on-code-show">-----</div>
+      <p class="on-msg hint" id="on-master"></p>
       <div id="on-share" class="stack">
         <button class="btn secondary wide" data-action="on-copy">&#128203; Salin Kode</button>
         <button class="btn secondary wide" data-action="on-copylink">&#128279; Salin / Bagikan Tautan</button>
+        <button class="btn secondary wide" data-action="on-copym">&#128065; Tautan Room Master (penonton)</button>
       </div>
     </div>
     <p class="on-err" id="on-err" role="alert"></p>
@@ -550,6 +555,7 @@ body.online.me-p1 #pad-p2,body.online.me-p2 #pad-p1{display:none}
     <ul>
       <li><b>Main Online</b> &rarr; <b>Buat Ruangan</b>, kirim kode / tautan ke teman, lalu temanmu memilih <b>Gabung</b>. Pembuat ruangan = Pemain 1 (Biru), yang bergabung = Pemain 2 (Merah). Satu perangkat = satu pemain.</li>
       <li>Soal, energi, cooldown, dan pilihan jalur dihitung di perangkatmu sendiri sehingga respons terasa instan. Pasukan, pertempuran, HP benteng, dan waktu diputuskan oleh perangkat pembuat ruangan (host).</li>
+      <li><b>Room Master</b>: satu orang ketiga yang hanya <b>menonton</b> Pemain 1 vs Pemain 2 (arena, HP, energi). Masuk lewat tombol <b>Masuk sebagai Room Master</b> + kode ruangan, atau tautan Room Master dari host. Bisa masuk di tengah pertandingan, tidak memengaruhi permainan, dan bisa diganti orang lain bila keluar.</li>
       <li>Koneksi dibuat langsung antar-perangkat (P2P). Badge di tengah atas menampilkan <b>LANGSUNG</b> + ping, atau <b>RELAY</b> bila koneksi langsung gagal (lebih lambat). Di online tidak ada Jeda; tombol Menu = keluar dari ruangan.</li>
     </ul>
     <h3>PERTANDINGAN</h3>
@@ -579,7 +585,7 @@ const Cfg = {
   TW: 80, TH: 40,   // ukuran tile isometrik
   SLAB: 30,         // ketebalan pulau arena
   WALL_H: 34, TOWER_H: 62, KEEP_H: 78,
-  MAX_HP: 250,      // HP benteng (kastil) tiap kerajaan
+  MAX_HP: 500,      // HP benteng (kastil) tiap kerajaan
   MATCH_TIME: 180,  // batas waktu pertandingan (detik); habis -> HP benteng terbesar menang, sama = seri
   COUNTDOWN: 3,     // detik hitung mundur sebelum bertanding
   LANES: 3,
@@ -1190,7 +1196,7 @@ const Input = {
     document.addEventListener('keydown', (e) => {
       if (this.isTyping(e.target)) return;
       const m = this.codeMap[e.code];
-      if (!m || State.screen !== 'game' || UI.isModalOpen()) return;
+      if (!m || State.screen !== 'game' || UI.isModalOpen() || Online.spectator) return;
       e.preventDefault();                       // cegah aktivasi tombol terfokus (mis. Enter/Space), scroll, Backspace
       if (e.repeat || this.held.has(e.code)) return;
       this.held.set(e.code, m);
@@ -1933,7 +1939,7 @@ const UI = {
       howtoUnits: q('#howto-units'), howtoSummon: q('#howto-summon'),
       online: q('#screen-online'), onName: q('#on-name'), onCode: q('#on-code'), onLobby: q('#on-lobby'), onWait: q('#on-wait'), onErr: q('#on-err'),
       onWaitMsg: q('#on-wait-msg'), onCodeShow: q('#on-code-show'), onShare: q('#on-share'), onCreate: q('#on-create'), onJoin: q('#on-join'),
-      netBadge: q('#net-badge'), toast: q('#toast')
+      netBadge: q('#net-badge'), toast: q('#toast'), onMaster: q('#on-master'), onWatch: q('#on-watch')
     };
     this.fillKeyHints();
     this.bind();
@@ -2002,6 +2008,8 @@ const UI = {
       'on-back': () => Online.cancel(),
       'on-copy': () => Online.copy('code'),
       'on-copylink': () => Online.copy('link'),
+      'on-copym': () => Online.copy('master'),
+      'on-watch': () => Online.join(true),
       'ready': () => Game.toggleReady(),
       'howto': () => this.showModal(true),
       'close-howto': () => this.showModal(false),
@@ -2103,21 +2111,23 @@ const UI = {
   setOnlineMode(on) {
     const b = document.body;
     b.classList.toggle('online', on);
+    b.classList.toggle('spectator', on && Online.spectator);
     b.classList.toggle('me-p1', on && Online.me === 'p1');
     b.classList.toggle('me-p2', on && Online.me === 'p2');
     b.classList.toggle('guest', on && !Online.isHost);
     for (const k of PLAYER_KEYS) {
       const inp = $('#in-' + k), lb = document.querySelector(`label[for="in-${k}"]`);
-      if (inp) inp.readOnly = on && k !== Online.me;
+      if (inp) inp.readOnly = on && (Online.spectator || k !== Online.me);
       if (lb) lb.textContent = 'NAMA KERAJAAN PEMAIN ' + (k === 'p1' ? 1 : 2) + (on && k === Online.me ? ' (KAMU)' : '');
     }
-    if (on) this.el.readyHint.textContent = 'Tekan Siap. Pertandingan dimulai otomatis setelah kedua pemain siap.';
+    if (on) this.el.readyHint.textContent = Online.spectator ? 'Kamu Room Master: hanya menonton. Pertandingan dimulai setelah kedua pemain siap.' : 'Tekan Siap. Pertandingan dimulai otomatis setelah kedua pemain siap.';
     else { this.fillKeyHints(); this.el.netBadge.textContent = ''; }
   },
   setBadge(mode, rtt) {
     const b = this.el.netBadge, r = Math.round(rtt || 0);
     if (!b) return;
-    b.textContent = (mode === 'p2p' ? 'LANGSUNG' : mode === 'relay' ? 'RELAY' : '…') + ' · ' + (r ? r + ' ms' : '– ms');
+    b.textContent = (mode === 'p2p' ? 'LANGSUNG' : mode === 'relay' ? 'RELAY' : '…') + ' · ' + (r ? r + ' ms' : '– ms')
+      + (Online.spectator ? ' · 👁 MENONTON' : (Online.masterName ? ' · 👁 ' + Online.masterName : ''));
     b.className = 'online-only' + (mode === 'relay' ? ' bad' : !r ? '' : r < 90 ? '' : r < 180 ? ' mid' : ' bad');
   },
   toast(text) {
@@ -2135,6 +2145,8 @@ const UI = {
     e.onWaitMsg.textContent = Online.waitMsg || '';
     e.onCodeShow.textContent = Online.code || '-----';
     e.onShare.classList.toggle('hidden', !Online.isHost);
+    e.onMaster.textContent = Online.isHost ? 'Room Master (penonton): ' + (Online.masterName || 'belum ada') : '';
+    e.onWatch.disabled = Online.busy;
     e.onCreate.disabled = Online.busy; e.onJoin.disabled = Online.busy;
     e.onJoin.textContent = Online.busy ? '…' : 'Gabung';
   },
@@ -2354,9 +2366,9 @@ const Game = {
   // Tamu: host memulai hitung mundur (reset state, pakai seed soal host, pertahankan jalur pilihan sendiri)
   onlineCountdown(seed) {
     if (State.screen !== 'game') return;
-    const lane = State.players[Online.me].lane;
+    const lane = Online.me ? State.players[Online.me].lane : 1;
     Input.releaseAll(); resetMatchState();
-    State.players[Online.me].lane = lane;
+    if (Online.me) State.players[Online.me].lane = lane;
     State.quiz = Quiz.newSession(Number(seed) >>> 0);
     Online.pending = {};
     this.beginCountdown();
@@ -2394,7 +2406,7 @@ const Game = {
   rematch() {
     if (State.screen !== 'game' || State.status !== 'ended') return;
     if (Online.active) {
-      if (Online.peerGone) return;
+      if (Online.peerGone || Online.spectator) return;
       if (!Online.isHost) { Online.send('r', { t: 'rm' }); UI.toast('Meminta rematch ke host…'); return; }   // host yang memulai
     }
     Input.releaseAll();
@@ -2457,7 +2469,7 @@ const Game = {
   },
   resetIdle() { Input.releaseAll(); State.status = 'idle'; resetMatchState(); },
   requestMenu() {                                                // online: tekan dua kali (mencegah keluar tak sengaja)
-    if (Online.active && State.status !== 'ended' && !Online.peerGone) {
+    if (Online.active && State.status !== 'ended' && !Online.peerGone && !Online.spectator) {
       const now = performance.now();
       if (now - Online.leaveArm > 3000) { Online.leaveArm = now; UI.toast('Tekan Menu sekali lagi untuk keluar dari ruangan'); return; }
     }
@@ -2603,7 +2615,7 @@ const Game = {
 
   // Pemrosesan aksi pemain: tiap pemain hanya menyentuh state miliknya sendiri
   handleInput(evt) {
-    if (evt.type !== 'press' || State.screen !== 'game') return;
+    if (evt.type !== 'press' || State.screen !== 'game' || Online.spectator) return;
     const p = State.players[evt.player], st = State.status;
     if (!p) return;
     switch (evt.action) {
@@ -2627,7 +2639,7 @@ const Game = {
       case 'confirm':
         if (st === 'ready') {
           p.ready = !p.ready;
-          if (Online.active) { Online.send('r', { t: 'rdy', v: p.ready }); UI.syncPads(); if (Online.isHost) Online.maybeStart(); }
+          if (Online.active) { Online.send('r', { t: 'rdy', v: p.ready, p: Online.me }); UI.syncPads(); if (Online.isHost) Online.maybeStart(); }
           else if (State.players.p1.ready && State.players.p2.ready) this.beginCountdown();
           else UI.syncPads();
         } else if (st === 'playing') {
@@ -2730,8 +2742,12 @@ class NetSession {
     const j = await this.call('POST', { action: 'create', name });
     this.role = 'h'; this.peerRole = 'g'; this.code = j.code; this.token = j.token; this.name = j.name; this.begin(); return j;
   }
-  async join(code, name) {
-    const j = await this.call('POST', { action: 'join', code, name, as: 'player' });
+  /** Host: pasangan koneksi kedua ke Room Master (memakai sesi host yang sama). */
+  attachMaster(code, token, name, since) {
+    this.role = 'h'; this.peerRole = 'm'; this.code = code; this.token = token; this.name = name; this.idle = 1500; this.begin(since || 0);
+  }
+  async join(code, name, asMaster) {
+    const j = await this.call('POST', { action: 'join', code, name, as: asMaster ? 'master' : 'player' });
     this.role = j.role; this.peerRole = 'h'; this.code = j.code; this.token = j.token; this.name = j.name; this.peerName = j.hostName; this.begin(j.base || 0); return j;
   }
   begin(since) {
@@ -2967,14 +2983,14 @@ const UNIT_TYPES = ['knight', 'archer', 'guard'];
 const UNIT_STATES = ['idle', 'walk', 'attack'];
 const FX_KINDS = { arrow: 1, hit: 1, blast: 1, wave: 1, num: 1, die: 1 };
 const Online = {
-  active: false, isHost: false, me: 'p1', other: 'p2', net: null, code: '', myName: '', peerName: '', peerGone: false,
+  active: false, isHost: false, spectator: false, netM: null, masterName: '', me: 'p1', other: 'p2', net: null, code: '', myName: '', peerName: '', peerGone: false,
   busy: false, view: 'lobby', err: '', waitMsg: '',
   reqId: 0, pending: {}, fxQ: [], psSig: '', psAt: 0, wAt: 0, nameDirty: false, nameAt: 0, leaveArm: 0,
 
   newNet() {
     return new NetSession({
       onPeer: (joined, name) => this.onPeer(joined, name),
-      onReady: () => this.enterMatch(),
+      onReady: () => this.onNetReady(),
       onStatus: (mode, rtt) => this.onStatus(mode, rtt),
       onMessage: (m) => this.onMessage(m),
       onClose: (why) => this.onClose(why)
@@ -2995,8 +3011,11 @@ const Online = {
     if (!code) return;
     State.screen = 'online'; this.view = 'lobby';
     UI.el.onCode.value = code;
-    UI.el.onName.value = Cfg.DEFAULT_NAMES.p2;
+    let master = false;
+    try { master = new URLSearchParams(location.search).get('role') === 'master'; } catch (e) { /* abaikan */ }
+    UI.el.onName.value = master ? 'Room Master' : Cfg.DEFAULT_NAMES.p2;
     UI.sync();
+    if (master) this.join(true);
   },
   async create() {
     if (this.busy || this.net) return;
@@ -3007,20 +3026,23 @@ const Online = {
       await net.create(name);
       this.isHost = true; this.me = 'p1'; this.other = 'p2'; this.code = net.code; this.myName = name; this.peerName = '';
       this.view = 'wait'; this.waitMsg = 'Menunggu lawan bergabung… Bagikan kode ini:';
+      this.openMaster(0);
     } catch (e) { this.net = null; this.err = e.message; }
     this.busy = false; UI.syncOnline();
   },
-  async join() {
+  async join(asMaster) {
     if (this.busy || this.net) return;
     const code = UI.el.onCode.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (code.length !== 5) { this.setErr('Kode ruangan harus 5 karakter.'); return; }
     this.busy = true; this.err = ''; UI.syncOnline();
-    const name = sanitizeName(UI.el.onName.value, Cfg.DEFAULT_NAMES.p2);
+    let name = sanitizeName(UI.el.onName.value, asMaster ? 'Room Master' : Cfg.DEFAULT_NAMES.p2);
+    if (asMaster && Object.values(Cfg.DEFAULT_NAMES).includes(name)) name = 'Room Master';
     try {
       const net = this.newNet(); this.net = net;
-      await net.join(code, name);
-      this.isHost = false; this.me = 'p2'; this.other = 'p1'; this.code = net.code; this.myName = name; this.peerName = net.peerName || '';
-      this.view = 'wait'; this.waitMsg = 'Menyambungkan ke ' + (this.peerName || 'lawan') + '…';
+      await net.join(code, name, !!asMaster);
+      this.isHost = false; this.spectator = !!asMaster; this.me = asMaster ? null : 'p2'; this.other = asMaster ? null : 'p1';
+      this.code = net.code; this.myName = name; this.peerName = net.peerName || '';
+      this.view = 'wait'; this.waitMsg = asMaster ? 'Menyambungkan ke host…' : 'Menyambungkan ke ' + (this.peerName || 'lawan') + '…';
     } catch (e) { this.net = null; this.err = e.message; }
     this.busy = false; UI.syncOnline();
   },
@@ -3030,12 +3052,12 @@ const Online = {
     UI.sync();
   },
   copy(kind) {
-    const text = kind === 'link' ? this.shareUrl() : this.code;
-    const done = () => UI.toast(kind === 'link' ? 'Tautan disalin' : 'Kode disalin');
-    if (kind === 'link' && navigator.share) { navigator.share({ title: 'KINGDOM DUEL', text: 'Ayo duel di KINGDOM DUEL!', url: text }).catch(() => { }); return; }
+    const text = kind === 'code' ? this.code : this.shareUrl() + (kind === 'master' ? '&role=master' : '');
+    const done = () => UI.toast(kind === 'code' ? 'Kode disalin' : 'Tautan disalin');
+    if (kind !== 'code' && navigator.share) { navigator.share({ title: 'KINGDOM DUEL', text: 'Ayo duel di KINGDOM DUEL!', url: text }).catch(() => { }); return; }
     const fallback = () => {
       try { const t = document.createElement('textarea'); t.value = text; t.style.position = 'fixed'; t.style.opacity = '0'; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); done(); }
-      catch (e) { UI.toast(kind === 'link' ? text : 'Kode: ' + text); }
+      catch (e) { UI.toast(kind !== 'code' ? text : 'Kode: ' + text); }
     };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
   },
@@ -3047,16 +3069,21 @@ const Online = {
     else this.waitMsg = 'Menunggu lawan bergabung… Bagikan kode ini:';
     UI.syncOnline();
   },
+  onNetReady() {
+    if (this.spectator) { this.waitMsg = 'Terhubung ke host ✔ menunggu pertandingan dimulai…'; UI.syncOnline(); }
+    else this.enterMatch();
+  },
   enterMatch() {
-    if (this.active || !this.net) return;
+    if (this.active || !this.net || this.spectator) return;
     this.active = true; this.peerGone = false; this.pending = {}; this.fxQ = []; this.psSig = ''; this.leaveArm = 0;
     Input.releaseAll();
     State.screen = 'game'; resetMatchState(); State.status = 'ready';
     State.identity[this.me].kingdom = this.myName;
     State.identity[this.other].kingdom = sanitizeName(this.peerName, Cfg.DEFAULT_NAMES[this.other]);
     UI.setOnlineMode(true);
-    this.send('r', { t: 'nm', n: this.myName });
+    this.send('r', { t: 'nm', n: this.myName, p: this.me });
     UI.sync();
+    this.sendSync();
   },
   onStatus(mode, rtt) { UI.setBadge(mode, rtt); },
   onClose(why) {
@@ -3069,18 +3096,59 @@ const Online = {
   },
   /** Bersihkan koneksi & mode online. bye=true: beri tahu lawan. */
   dropNet(bye) {
+    if (this.netM) { const m = this.netM; this.netM = null; try { m.teardown(); } catch (e) { /* abaikan */ } }
     if (this.net) { try { if (bye) this.net.leave(); else this.net.teardown(); } catch (e) { /* abaikan */ } this.net = null; }
+    this.masterName = ''; this.spectator = false;
     this.active = false; this.peerGone = false; this.busy = false; this.pending = {}; this.fxQ = [];
     UI.setOnlineMode(false);
   },
   leave() { this.dropNet(true); },
-  send(ch, obj) { return !!(this.net && this.net.ready && this.net.send(ch, obj)); },
+  /** Kirim ke lawan; host juga meneruskan siaran yang sama ke Room Master (solo=true: hanya ke lawan). */
+  send(ch, obj, solo) {
+    if (this.isHost && !solo && this.netM && this.netM.ready) this.netM.send(ch, obj);
+    return !!(this.net && this.net.ready && this.net.send(ch, obj));
+  },
+
+  /* ---------- Room Master (penonton) ---------- */
+  /** Host: buka pasangan koneksi kedua yang menunggu Room Master. since: lewati pesan sesi master sebelumnya. */
+  openMaster(since) {
+    if (!this.net || this.netM || !this.isHost) return;
+    const self = this;
+    const m = new NetSession({
+      onPeer: (joined, name) => { self.masterName = joined ? name : ''; self.masterChanged(); },
+      onReady: () => { self.masterChanged(); self.sendSync(); },
+      onMessage: () => { },                        // Room Master hanya menonton: pesan darinya diabaikan
+      onStatus: () => { },
+      onClose: () => {
+        const keep = m.since;
+        if (self.netM !== m) return;
+        self.netM = null; self.masterName = ''; self.masterChanged();
+        if (self.net && !self.net.closed) setTimeout(() => self.openMaster(keep), 600);      // kursi Room Master dibuka lagi
+      }
+    });
+    this.netM = m; m.attachMaster(this.net.code, this.net.token, this.net.name, since || 0);
+  },
+  masterChanged() {
+    UI.syncOnline();
+    if (this.net && this.active) UI.setBadge(this.net.mode, this.net.rtt);
+  },
+  /** Room Master yang masuk (di lobi atau tengah pertandingan): kirim keadaan saat ini. */
+  sendSync() {
+    const m = this.netM; if (!m || !m.ready) return;
+    const P = State.players;
+    if (!this.active || !P) { m.send('r', { t: 'sync', st: 'wait' }); return; }
+    m.send('r', {
+      t: 'sync', st: State.status, cdn: State.countdown, mt: State.matchTime, res: State.result,
+      nm: [State.identity.p1.kingdom, State.identity.p2.kingdom], rd: [!!P.p1.ready, !!P.p2.ready], hp: [P.p1.hp, P.p2.hp],
+      ps: [this.statsOf('p1'), this.statsOf('p2')]
+    });
+  },
 
   /* ---------- per frame ---------- */
   tick(dt) {
     if (!this.active || !this.net || !this.net.ready) return;
     const now = performance.now();
-    if (this.nameDirty && now - this.nameAt > 250) { this.nameDirty = false; this.nameAt = now; this.send('r', { t: 'nm', n: this.myName }); }
+    if (this.nameDirty && now - this.nameAt > 250) { this.nameDirty = false; this.nameAt = now; this.send('r', { t: 'nm', n: this.myName, p: this.me }); }
     this.sendStats(false);
     if (!this.isHost) return;
     while (this.fxQ.length) this.send('r', { t: 'fx', l: this.fxQ.splice(0, 20) });
@@ -3089,14 +3157,19 @@ const Online = {
 
   /* ---------- statistik pemain (dipegang tiap perangkat, disalin ke lawan untuk HUD & ringkasan hasil) ---------- */
   sendStats(force) {
-    const p = State.players && State.players[this.me]; if (!p) return;
-    const o = { t: 'ps', en: p.energy, ln: p.lane, c: p.combo, mc: p.maxCombo, ok: p.correct, wr: p.wrong, to: p.timeouts, sm: p.summoned, sk: p.skills };
+    const o = this.statsOf(this.me); if (!o) return;
     const sig = JSON.stringify(o), now = performance.now();
     if (!force && (sig === this.psSig || now - this.psAt < 100)) return;
     this.psSig = sig; this.psAt = now; this.send('r', o);
   },
+  statsOf(k) {
+    const p = State.players && State.players[k]; if (!p) return null;
+    return { t: 'ps', p: k, en: p.energy, ln: p.lane, c: p.combo, mc: p.maxCombo, ok: p.correct, wr: p.wrong, to: p.timeouts, sm: p.summoned, sk: p.skills };
+  },
   applyStats(m) {
-    const p = State.players[this.other]; if (!p) return;
+    const key = m.p === 'p1' || m.p === 'p2' ? m.p : this.other;
+    if (!key || key === this.me) return;
+    const p = State.players[key]; if (!p) return;
     const n = (v, a, b) => clamp(Math.floor(Number(v) || 0), a, b);
     const en = n(m.en, Cfg.ENERGY.min, Cfg.ENERGY.max);
     if (en !== p.energy) { p.energy = en; State.hudDirty = true; }
@@ -3187,19 +3260,28 @@ const Online = {
   },
   requestSummon(type, lane, cost) { const id = this.remember({ k: 'u', type, cost }); this.send('r', { t: 'sm', id, u: type, l: lane }); },
   requestSkill(sk, lane, cost) { const id = this.remember({ k: 's', sk, cost }); this.send('r', { t: 'sk', id, k: sk, l: lane }); },
-  reject(id, why) { this.send('r', { t: 'rj', id, why }); },
+  reject(id, why) { this.send('r', { t: 'rj', id, why }, true); },
 
   /* ---------- pesan masuk ---------- */
   onMessage(m) {
-    if (!this.active) { this.enterMatch(); if (!this.active) return; }
+    if (!this.active) {
+      if (this.spectator) { if (m.t !== 'sync' || m.st === 'wait') return; this.enterSpectate(); }
+      else this.enterMatch();
+      if (!this.active) return;
+    }
     const host = this.isHost, P = State.players;
+    const key = m.p === 'p1' || m.p === 'p2' ? m.p : this.other;           // pengirim pesan nm / rdy
     switch (m.t) {
+      case 'sync': if (this.spectator) this.applySync(m); break;
       case 'nm':
-        State.identity[this.other].kingdom = sanitizeName(m.n, Cfg.DEFAULT_NAMES[this.other]);
+        if (!key || key === this.me) break;
+        State.identity[key].kingdom = sanitizeName(m.n, Cfg.DEFAULT_NAMES[key]);
+        if (host && this.netM && this.netM.ready) this.netM.send('r', { t: 'nm', n: m.n, p: key });       // teruskan nama tamu ke Room Master
         UI.syncNames(); break;
       case 'rdy':
-        if (State.status !== 'ready') break;
-        P[this.other].ready = !!m.v;
+        if (State.status !== 'ready' || !key || key === this.me) break;
+        P[key].ready = !!m.v;
+        if (host && this.netM && this.netM.ready) this.netM.send('r', { t: 'rdy', v: !!m.v, p: key });
         UI.syncPads();
         if (host) this.maybeStart();
         break;
@@ -3207,13 +3289,40 @@ const Online = {
       case 'end': if (!host) Game.applyEnd(m.r); break;
       case 'w': if (!host) this.applyWorld(m); break;
       case 'fx': if (!host) this.applyFx(m.l); break;
-      case 'ps': this.applyStats(m); break;
+      case 'ps':
+        this.applyStats(m);
+        if (host && this.netM && this.netM.ready && m.p) this.netM.send('r', m);                           // teruskan statistik tamu
+        break;
       case 'rm': if (host && State.status === 'ended') Game.rematch(); break;
       case 'sm': if (host) this.hostSummon(m); break;
       case 'sk': if (host) this.hostSkill(m); break;
       case 'rj': if (!host) this.onReject(m); break;
       default: break;
     }
+  },
+  enterSpectate() {
+    if (this.active || !this.net) return;
+    this.active = true; this.peerGone = false; this.pending = {}; this.fxQ = [];
+    Input.releaseAll();
+    State.screen = 'game'; resetMatchState(); State.status = 'ready';
+    UI.setOnlineMode(true);
+    UI.sync();
+  },
+  applySync(m) {
+    const P = State.players;
+    ['p1', 'p2'].forEach((k, i) => {
+      if (m.nm && m.nm[i]) State.identity[k].kingdom = sanitizeName(m.nm[i], Cfg.DEFAULT_NAMES[k]);
+      if (m.rd) P[k].ready = !!m.rd[i];
+      const hp = Number(m.hp && m.hp[i]); if (Number.isFinite(hp)) P[k].hp = clamp(hp, 0, P[k].maxHp);
+      if (m.ps && m.ps[i]) this.applyStats(m.ps[i]);
+    });
+    State.hudDirty = true;
+    const stt = m.st;
+    if (stt === 'countdown') { State.countdown = Math.max(0.1, Number(m.cdn) || 1); State.status = 'countdown'; }
+    else if (stt === 'playing') { State.matchTime = Number(m.mt) || 0; State.status = 'playing'; }
+    else if (stt === 'ended' && m.res) { State.status = 'playing'; Game.applyEnd(m.res); return; }
+    else State.status = 'ready';
+    UI.sync();
   },
   maybeStart() {
     if (State.status === 'ready' && State.players.p1.ready && State.players.p2.ready) Game.beginCountdown();
