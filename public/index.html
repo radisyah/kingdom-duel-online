@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#1b1426">
-<title>KINGDOM DUEL · Online</title>
+<title>HOLLOWAR · Online</title>
 <style>
 /* ===== Dasar ===== */
 :root{
@@ -497,7 +497,7 @@ html,body{height:var(--app-h,100%);max-height:var(--app-h,100%);overflow:hidden;
 </style>
 </head>
 <body>
-<canvas id="arena" aria-label="Arena KINGDOM DUEL"></canvas>
+<canvas id="arena" aria-label="Arena HOLLOWAR"></canvas>
 
 <!-- ===== MENU UTAMA ===== -->
 <main id="screen-menu" class="screen">
@@ -637,7 +637,7 @@ html,body{height:var(--app-h,100%);max-height:var(--app-h,100%);overflow:hidden;
 <div id="modal" class="hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
   <div class="card">
     <h2 id="modal-title">CARA BERMAIN</h2>
-    <p style="text-align:left">KINGDOM DUEL adalah duel strategi dua pemain (satu perangkat, atau <b>online</b> dengan kode ruangan). Jawab soal matematika lebih cepat dan lebih tepat untuk mengumpulkan energi kerajaan.</p>
+    <p style="text-align:left">HOLLOWAR adalah duel strategi dua pemain (satu perangkat, atau <b>online</b> dengan kode ruangan). Jawab soal matematika lebih cepat dan lebih tepat untuk mengumpulkan energi kerajaan.</p>
     <h3>KONTROL PEMAIN</h3>
     <ul id="howto-keys"></ul>
     <h3>SOAL &amp; ENERGI</h3>
@@ -675,7 +675,7 @@ html,body{height:var(--app-h,100%);max-height:var(--app-h,100%);overflow:hidden;
 'use strict';
 
 /* =====================================================================
-   KINGDOM DUEL — Tahap 7: UI/UX, Animasi, Mobile & Suara
+   HOLLOWAR — Tahap 7: UI/UX, Animasi, Mobile & Suara
    Modul: Cfg, Teams, Quiz, Energy, Units, State, Input, Renderer, UI, Game
    Alur: Input (keyboard/sentuh) -> bus -> Game.handleInput -> Quiz/Energy/Units -> UI
    ===================================================================== */
@@ -3159,7 +3159,7 @@ const Online = {
   copy(kind) {
     const text = kind === 'code' ? this.code : this.shareUrl() + (kind === 'master' ? '&role=master' : '');
     const done = () => UI.toast(kind === 'code' ? 'Kode disalin' : 'Tautan disalin');
-    if (kind !== 'code' && navigator.share) { navigator.share({ title: 'KINGDOM DUEL', text: 'Ayo duel di KINGDOM DUEL!', url: text }).catch(() => { }); return; }
+    if (kind !== 'code' && navigator.share) { navigator.share({ title: 'HOLLOWAR', text: 'Ayo duel di HOLLOWAR!', url: text }).catch(() => { }); return; }
     const fallback = () => {
       try { const t = document.createElement('textarea'); t.value = text; t.style.position = 'fixed'; t.style.opacity = '0'; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); done(); }
       catch (e) { UI.toast(kind !== 'code' ? text : 'Kode: ' + text); }
