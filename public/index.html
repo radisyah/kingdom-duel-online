@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#1b1426">
-<title>KINGDOM DUEL · Online</title>
+<title>HOLLOWAR · Online</title>
 <style>
 /* ===== Dasar ===== */
 :root{
@@ -494,15 +494,25 @@ html,body{height:var(--app-h,100%);max-height:var(--app-h,100%);overflow:hidden;
   #screen-menu .title{font-size:clamp(26px,min(11vw,9.5vh),72px)}
   #screen-menu .btn{padding-left:10px;padding-right:10px;font-size:13px}
 }
+
+/* Zoom & geser arena (Android: cubit dua jari) */
+#arena{touch-action:none}
+#zoomctl{position:absolute;right:var(--zoom-right,8px);top:var(--zoom-top,70px);display:flex;flex-direction:column;gap:6px;z-index:5}
+#zoomctl button{width:40px;height:40px;border-radius:12px;border:2px solid var(--gold,#f5c542);background:rgba(20,14,34,.82);color:#fff;
+  font:900 20px/1 system-ui,sans-serif;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;padding:0;
+  box-shadow:0 3px 8px rgba(0,0,0,.4)}
+#zoomctl button:active{transform:scale(.92);filter:brightness(1.3)}
+#zoomctl #zoom-lvl{width:40px;font-size:11px;text-align:center;color:#ffe38a;font-weight:800;text-shadow:0 1px 2px #000;pointer-events:none}
+@media (max-height:520px){#zoomctl button{width:34px;height:34px;font-size:17px;border-radius:10px}#zoomctl{gap:4px}}
 </style>
 </head>
 <body>
-<canvas id="arena" aria-label="Arena KINGDOM DUEL"></canvas>
+<canvas id="arena" aria-label="Arena HOLLOWAR"></canvas>
 
 <!-- ===== MENU UTAMA ===== -->
 <main id="screen-menu" class="screen">
   <div class="menu-box">
-    <div class="title">KINGDOM<br>DUEL</div>
+    <div class="title">HOLLOWAR</div>
     <div class="subtitle">Strategi Fantasi &bull; Duel Matematika</div>
     <div class="versus"><span class="b">KERAJAAN BIRU</span> &nbsp;&#9876;&nbsp; <span class="r">KERAJAAN MERAH</span></div>
     <div class="stack" style="width:100%">
@@ -510,6 +520,7 @@ html,body{height:var(--app-h,100%);max-height:var(--app-h,100%);overflow:hidden;
       <button class="btn secondary wide" data-action="play">&#9876; Main Lokal (1 perangkat)</button>
       <button class="btn secondary wide" data-action="howto">&#128216; Cara Bermain</button>
       <button class="btn secondary wide" data-action="sound" aria-pressed="true"><span class="snd-ico">&#128266;</span> <span class="snd-lbl">Suara: Hidup</span></button>
+      <button class="btn secondary wide" data-action="music" aria-pressed="true"><span class="mus-ico">&#127925;</span> <span class="mus-lbl">Musik: Hidup</span></button>
     </div>
     <div class="version">Online PvP &mdash; WebRTC + Vercel &amp; Redis</div>
   </div>
@@ -575,6 +586,12 @@ html,body{height:var(--app-h,100%);max-height:var(--app-h,100%);overflow:hidden;
     </div>
   </header>
 
+  <div id="zoomctl" aria-label="Zoom arena">
+    <button type="button" id="zoom-in" aria-label="Perbesar" title="Perbesar">+</button>
+    <div id="zoom-lvl">100%</div>
+    <button type="button" id="zoom-out" aria-label="Perkecil" title="Perkecil">&minus;</button>
+    <button type="button" id="zoom-reset" aria-label="Atur ulang zoom" title="Atur ulang zoom">&#8635;</button>
+  </div>
   <div id="bottom">
     <div id="pads"><!-- panel pemain dibangun oleh UI.buildPads() --></div>
     <footer id="controls">
@@ -582,6 +599,7 @@ html,body{height:var(--app-h,100%);max-height:var(--app-h,100%);overflow:hidden;
       <button class="btn secondary" id="btn-pause" data-action="pause" aria-label="Jeda" title="Jeda">&#10074;&#10074;<span class="lbl"> Jeda</span></button>
       <button class="btn secondary" id="btn-restart" data-action="restart" aria-label="Mulai ulang" title="Mulai ulang">&#8635;<span class="lbl"> Mulai Ulang</span></button>
       <button class="btn secondary" data-action="sound" aria-pressed="true" aria-label="Suara" title="Suara hidup/mati"><span class="snd-ico">&#128266;</span><span class="lbl snd-lbl"> Suara</span></button>
+      <button class="btn secondary" data-action="music" aria-pressed="true" aria-label="Musik" title="Musik perang hidup/mati"><span class="mus-ico">&#127925;</span><span class="lbl mus-lbl"> Musik</span></button>
       <button class="btn secondary fs-btn" data-action="fullscreen" aria-label="Layar penuh" title="Layar penuh">&#9974;<span class="lbl"> Layar Penuh</span></button>
       <button class="btn danger" id="btn-menu" data-action="menu" aria-label="Menu" title="Menu">&#8962;<span class="lbl"> Menu</span></button>
     </footer>
@@ -637,7 +655,7 @@ html,body{height:var(--app-h,100%);max-height:var(--app-h,100%);overflow:hidden;
 <div id="modal" class="hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
   <div class="card">
     <h2 id="modal-title">CARA BERMAIN</h2>
-    <p style="text-align:left">KINGDOM DUEL adalah duel strategi dua pemain (satu perangkat, atau <b>online</b> dengan kode ruangan). Jawab soal matematika lebih cepat dan lebih tepat untuk mengumpulkan energi kerajaan.</p>
+    <p style="text-align:left">HOLLOWAR adalah duel strategi dua pemain (satu perangkat, atau <b>online</b> dengan kode ruangan). Jawab soal matematika lebih cepat dan lebih tepat untuk mengumpulkan energi kerajaan.</p>
     <h3>KONTROL PEMAIN</h3>
     <ul id="howto-keys"></ul>
     <h3>SOAL &amp; ENERGI</h3>
@@ -675,7 +693,7 @@ html,body{height:var(--app-h,100%);max-height:var(--app-h,100%);overflow:hidden;
 'use strict';
 
 /* =====================================================================
-   KINGDOM DUEL — Tahap 7: UI/UX, Animasi, Mobile & Suara
+   HOLLOWAR — Tahap 7: UI/UX, Animasi, Mobile & Suara
    Modul: Cfg, Teams, Quiz, Energy, Units, State, Input, Renderer, UI, Game
    Alur: Input (keyboard/sentuh) -> bus -> Game.handleInput -> Quiz/Energy/Units -> UI
    ===================================================================== */
@@ -898,6 +916,114 @@ const Energy = {
 };
 
 /* =====================================================================
+   MUSIK — latar bertema peperangan (sintetis Web Audio, tanpa aset): genderang taiko, drum baris-berbaris,
+   ostinato bass, string rendah, dan melodi terompet minor D. Dijadwalkan lewat jam audio dari loop frame
+   (Music.update dipanggil tiap frame; tidak ada setInterval/setTimeout).
+   ===================================================================== */
+const Music = {
+  enabled: true, gain: null, next: 0, step: 0, level: 0,
+  BPM: 104, LEN: 128,
+  // Akord per birama (8 birama): Dm Dm Bb Bb Gm A Dm A
+  CH: [[50, 53, 57], [50, 53, 57], [46, 50, 53], [46, 50, 53], [43, 46, 50], [45, 49, 52], [50, 53, 57], [45, 49, 52]],
+  // Melodi: [langkah-16, nada MIDI, panjang langkah]
+  MEL: [[0, 62, 6], [6, 62, 2], [8, 65, 4], [12, 69, 4], [16, 74, 8], [24, 72, 4], [28, 69, 4],
+        [32, 70, 6], [38, 69, 2], [40, 67, 4], [44, 65, 4], [48, 65, 6], [54, 67, 2], [56, 69, 8],
+        [64, 67, 6], [70, 70, 2], [72, 74, 4], [76, 72, 4], [80, 73, 6], [86, 74, 2], [88, 76, 8],
+        [96, 77, 6], [102, 76, 2], [104, 74, 4], [108, 69, 4], [112, 73, 8], [120, 69, 8]],
+  init() {
+    try { if (localStorage.getItem('kd_music') === '0') this.enabled = false; } catch (_) { /* abaikan */ }
+  },
+  set(on) {
+    this.enabled = !!on;
+    try { localStorage.setItem('kd_music', this.enabled ? '1' : '0'); } catch (_) { /* abaikan */ }
+    if (this.enabled) Sfx.unlock();
+    this.next = 0;
+    if (this.gain && !this.enabled) { try { this.gain.gain.cancelScheduledValues(0); this.gain.gain.value = 0; } catch (_) {} this.level = 0; }
+  },
+  mf(m) { return 440 * Math.pow(2, (m - 69) / 12); },
+  // Nada bersaring: osilator + lowpass + envelope
+  voice(freq, t, dur, type, vol, cutoff, att, det) {
+    const c = Sfx.ctx, o = c.createOscillator(), f = c.createBiquadFilter(), g = c.createGain();
+    o.type = type; o.frequency.value = freq; if (det) o.detune.value = det;
+    f.type = 'lowpass'; f.frequency.value = cutoff; f.Q.value = 0.7;
+    const a = Math.min(att, dur * 0.5);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(vol, t + a);
+    g.gain.setValueAtTime(vol, t + Math.max(a, dur - 0.08));
+    g.gain.linearRampToValueAtTime(0.0001, t + dur);
+    o.connect(f); f.connect(g); g.connect(this.gain);
+    o.start(t); o.stop(t + dur + 0.02);
+  },
+  taiko(t, vol) {
+    const c = Sfx.ctx, o = c.createOscillator(), g = c.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(130, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.28);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+    o.connect(g); g.connect(this.gain); o.start(t); o.stop(t + 0.5);
+    this.hit(t, 0.1, vol * 0.5, 260, 'lowpass');
+  },
+  hit(t, dur, vol, freq, ftype) {
+    const c = Sfx.ctx;
+    if (!Sfx.noiseBuf) {
+      const n = Math.floor(c.sampleRate * 0.6), buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+      Sfx.noiseBuf = buf;
+    }
+    const src = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+    src.buffer = Sfx.noiseBuf; f.type = ftype || 'bandpass'; f.frequency.value = freq;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(f); f.connect(g); g.connect(this.gain); src.start(t); src.stop(t + dur + 0.02);
+  },
+  beat(i, t, sd, battle) {
+    const bar = Math.floor(i / 16), s = i % 16, ch = this.CH[bar];
+    // Genderang taiko
+    if (s === 0) this.taiko(t, 0.9);
+    if (s === 8) this.taiko(t, 0.7);
+    if (battle && (s === 6 || s === 14)) this.taiko(t, 0.45);
+    if (!battle && s === 10) this.taiko(t, 0.3);
+    // Drum baris-berbaris (snare) saat pertempuran; gulungan di akhir tiap 4 birama
+    if (battle) {
+      if (s === 4 || s === 12) this.hit(t, 0.12, 0.32, 1900, 'bandpass');
+      if (bar % 4 === 3 && s >= 12) this.hit(t, 0.07, 0.2, 2300, 'bandpass');
+      else if (s % 2 === 0) this.hit(t, 0.03, 0.06, 5200, 'highpass');
+    }
+    // Ostinato bass (not 1/8)
+    if (s % 2 === 0) {
+      const accent = s % 8 === 0 ? 1 : 0.7;
+      this.voice(this.mf(ch[0]), t, sd * 1.8, 'sawtooth', (battle ? 0.2 : 0.14) * accent, 420, 0.01);
+    }
+    // String rendah menahan akord
+    if (s === 0) for (const n of ch) this.voice(this.mf(n + 12), t, sd * 16.2, 'sawtooth', 0.045, 900, 0.5, (n % 5) - 2);
+    // Melodi terompet
+    if (battle || bar >= 0) {
+      for (const m of this.MEL) {
+        if (m[0] !== i) continue;
+        const d = m[2] * sd, f = this.mf(m[1]), v = battle ? 0.17 : 0.11;
+        this.voice(f, t, d * 0.97, 'sawtooth', v, 1700, 0.05, -6);
+        this.voice(f, t, d * 0.97, 'square', v * 0.4, 1300, 0.06, 7);
+        if (battle) this.voice(f / 2, t, d * 0.97, 'sawtooth', v * 0.5, 800, 0.07);   // lapis oktaf (horn)
+      }
+    }
+  },
+  update() {
+    const ctx = Sfx.ctx;
+    if (!this.enabled || !ctx || ctx.state !== 'running') return;
+    if (!this.gain) { this.gain = ctx.createGain(); this.gain.gain.value = 0; this.gain.connect(ctx.destination); }
+    const now = ctx.currentTime;
+    // Volume mengikuti keadaan: menu lembut, pertempuran penuh, jeda/akhir diredam
+    const st = State.status, inGame = State.screen === 'game';
+    const want = !inGame ? 0.55 : st === 'playing' || st === 'countdown' ? 1 : st === 'paused' ? 0.25 : 0.4;
+    if (want !== this.level) { this.level = want; this.gain.gain.setTargetAtTime(want * 0.32, now, 0.25); }
+    const battle = inGame && st === 'playing';
+    const sd = 60 / this.BPM / 4;
+    if (!this.next || this.next < now - 0.5) this.next = now + 0.08;
+    while (this.next < now + 0.45) {
+      try { this.beat(this.step, this.next, sd, battle); } catch (_) { /* musik tidak boleh mengganggu permainan */ }
+      this.next += sd; this.step = (this.step + 1) % this.LEN;
+    }
+  }
+};
+
+/* =====================================================================
    SFX — efek suara sintetis (Web Audio, tanpa aset). Pengaturan hidup/mati tetap berlaku selama sesi
    (dan disimpan di localStorage bila tersedia). AudioContext dibuat setelah gestur pertama pemain.
    Tidak ada timer: semua nada dijadwalkan oleh jam audio browser.
@@ -914,11 +1040,11 @@ const Sfx = {
     document.addEventListener('keydown', unlock);
     document.addEventListener('visibilitychange', () => {
       if (!this.ctx) return;
-      try { if (document.hidden) this.ctx.suspend(); else if (this.enabled) this.ctx.resume(); } catch (_) { /* abaikan */ }
+      try { if (document.hidden) this.ctx.suspend(); else if (this.enabled || Music.enabled) this.ctx.resume(); } catch (_) { /* abaikan */ }
     });
   },
   unlock() {
-    if (!this.enabled) return;
+    if (!this.enabled && !Music.enabled) return;
     try {
       if (!this.ctx) {
         const AC = window.AudioContext || window.webkitAudioContext;
@@ -1342,6 +1468,7 @@ const Input = {
    ===================================================================== */
 const Renderer = {
   canvas: null, ctx: null, dpr: 1, w: 0, h: 0, lastBh: -1,
+  cam: { z: 1, px: 0, py: 0 }, base: null,
   objects: [], flats: [], hudEl: null, botEl: null,
 
   init() {
@@ -1350,6 +1477,7 @@ const Renderer = {
     this.hudEl = $('#hud');
     this.botEl = $('#bottom');
     this.buildScene();
+    this.initCamera();
     this.compactMQ = window.matchMedia ? window.matchMedia('(orientation:landscape) and (max-height:520px)') : null;
     this.reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches);
     this.resize();
@@ -1379,6 +1507,8 @@ const Renderer = {
         root.setProperty('--bh', this.botEl.offsetHeight + 'px'); // overlay berhenti tepat di atas panel kontrol
       }
     }
+    document.documentElement.style.setProperty('--zoom-top', Math.round(a.top + 8) + 'px');
+    document.documentElement.style.setProperty('--zoom-right', Math.round(this.w - a.right + 8) + 'px');
     this.area = a;
   },
   resize() {
@@ -1390,6 +1520,81 @@ const Renderer = {
     this.canvas.width = Math.round(this.w * this.dpr);
     this.canvas.height = Math.round(this.h * this.dpr);
     this.measure();
+  },
+
+  /* --- Kamera: cubit dua jari = zoom, geser satu jari = pan, roda mouse = zoom, ketuk dua kali = reset --- */
+  ZMIN: 0.6, ZMAX: 3.5,
+  resetCam() { this.cam.z = 1; this.cam.px = 0; this.cam.py = 0; this.syncZoomUI(); },
+  clampCam() {
+    const b = this.base, cam = this.cam;
+    if (!b) return;
+    cam.z = Math.max(this.ZMIN, Math.min(this.ZMAX, cam.z));
+    const mx = Math.max(0, (cam.z * b.wW * b.s0 - b.areaW) / 2) + 30, my = Math.max(0, (cam.z * b.wH * b.s0 - b.areaH) / 2) + 30;
+    cam.px = Math.max(-mx, Math.min(mx, cam.px)); cam.py = Math.max(-my, Math.min(my, cam.py));
+    if (cam.z <= 1) { const k = Math.max(0, cam.z - this.ZMIN) / (1 - this.ZMIN); if (cam.z < 1) { cam.px *= k; cam.py *= k; } }
+  },
+  // Ubah zoom ke nilai z dengan titik layar (fx, fy) tetap di tempat
+  zoomAt(z, fx, fy) {
+    const b = this.base, cam = this.cam;
+    if (!b) return;
+    z = Math.max(this.ZMIN, Math.min(this.ZMAX, z));
+    const r = z / cam.z, dx = fx - b.cx, dy = fy - b.cy;
+    cam.px = dx - r * (dx - cam.px); cam.py = dy - r * (dy - cam.py);
+    cam.z = z; this.clampCam(); this.syncZoomUI();
+  },
+  syncZoomUI() {
+    const el = document.getElementById('zoom-lvl');
+    if (el) el.textContent = Math.round(this.cam.z * 100) + '%';
+  },
+  initCamera() {
+    const cv = this.canvas, ptr = new Map();
+    let pinch = null, lastTap = 0, moved = 0;
+    const mid = () => { const a = [...ptr.values()]; return { x: (a[0].x + a[1].x) / 2, y: (a[0].y + a[1].y) / 2, d: Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) || 1 }; };
+    cv.addEventListener('pointerdown', (e) => {
+      if (State.screen !== 'game') return;
+      ptr.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+      moved = 0;
+      if (ptr.size === 2) { const m = mid(); pinch = { z: this.cam.z, d: m.d, x: m.x, y: m.y, px: this.cam.px, py: this.cam.py }; }
+    });
+    cv.addEventListener('pointermove', (e) => {
+      const p = ptr.get(e.pointerId);
+      if (!p) return;
+      const dx = e.clientX - p.x, dy = e.clientY - p.y;
+      p.x = e.clientX; p.y = e.clientY;
+      if (ptr.size >= 2 && pinch) {
+        const m = mid();
+        this.cam.px += m.x - pinch.x; this.cam.py += m.y - pinch.y; pinch.x = m.x; pinch.y = m.y;   // geser mengikuti titik tengah jari
+        this.zoomAt(pinch.z * m.d / pinch.d, m.x, m.y);
+        moved = 99;
+      } else if (ptr.size === 1) {
+        moved += Math.abs(dx) + Math.abs(dy);
+        if (moved > 6) { this.cam.px += dx; this.cam.py += dy; this.clampCam(); }
+      }
+    });
+    const end = (e) => {
+      if (!ptr.has(e.pointerId)) return;
+      ptr.delete(e.pointerId);
+      if (ptr.size < 2) pinch = null;
+      if (ptr.size === 0 && e.type === 'pointerup' && moved <= 6) {            // ketuk dua kali: reset / zoom cepat
+        const now = performance.now();
+        if (now - lastTap < 320) { if (this.cam.z > 1.05 || Math.abs(this.cam.px) + Math.abs(this.cam.py) > 4) this.resetCam(); else this.zoomAt(2, e.clientX, e.clientY); lastTap = 0; }
+        else lastTap = now;
+      }
+    };
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+    cv.addEventListener('wheel', (e) => {
+      if (State.screen !== 'game') return;
+      e.preventDefault();
+      this.zoomAt(this.cam.z * Math.exp(-e.deltaY * 0.0015), e.clientX, e.clientY);
+    }, { passive: false });
+    // Cegah zoom halaman bawaan Safari/Android (gesture) agar hanya zoom arena yang bekerja
+    for (const n of ['gesturestart', 'gesturechange']) document.addEventListener(n, (e) => e.preventDefault(), { passive: false });
+    const bz = (id, fn) => { const b = document.getElementById(id); if (b) b.addEventListener('click', fn); };
+    const ctr = () => this.base ? { x: this.base.cx, y: this.base.cy } : { x: 0, y: 0 };
+    bz('zoom-in', () => { const c = ctr(); this.zoomAt(this.cam.z * 1.3, c.x, c.y); });
+    bz('zoom-out', () => { const c = ctr(); this.zoomAt(this.cam.z / 1.3, c.x, c.y); });
+    bz('zoom-reset', () => this.resetCam());
   },
 
   /* --- Membangun daftar objek statis (sekali) --- */
@@ -1922,8 +2127,13 @@ const Renderer = {
     const Wd = Cfg.WORLD, wW = Wd.maxX - Wd.minX, wH = Wd.maxY - Wd.minY, pad = 10;
     const areaH = Math.max(100, bottom - top), areaW = Math.max(120, A.right - A.left);
     const scale = Math.min((areaW - 2 * pad) / wW, (areaH - 2 * pad) / wH, 1.5);
-    const ox = (A.left + A.right) / 2, oy = top + (areaH - wH * scale) / 2 - Wd.minY * scale;
-    c.setTransform(this.dpr * scale, 0, 0, this.dpr * scale, this.dpr * ox, this.dpr * oy);
+    const ox0 = (A.left + A.right) / 2, oy0 = top + (areaH - wH * scale) / 2 - Wd.minY * scale;
+    this.base = { s0: scale, ox: ox0, oy: oy0, cx: (A.left + A.right) / 2, cy: (top + bottom) / 2, areaW, areaH, wW, wH };
+    this.clampCam();
+    // Kamera: zoom terhadap pusat arena + geser (pan)
+    const cam = this.cam, zs = scale * cam.z;
+    const ox = this.base.cx + cam.z * (ox0 - this.base.cx) + cam.px, oy = this.base.cy + cam.z * (oy0 - this.base.cy) + cam.py;
+    c.setTransform(this.dpr * zs, 0, 0, this.dpr * zs, this.dpr * ox, this.dpr * oy);
 
     this.drawSlab();
     this.drawTiles(t);
@@ -2123,6 +2333,7 @@ const UI = {
       'resume': () => Game.togglePause(),
       'restart': () => Game.restart(),
       'sound': () => { Sfx.set(!Sfx.enabled); this.syncSound(); },
+      'music': () => { Music.set(!Music.enabled); this.syncSound(); },
       'fullscreen': () => this.toggleFullscreen(),
       'rematch': () => Game.rematch(),
       'menu': () => Game.requestMenu()
@@ -2131,7 +2342,7 @@ const UI = {
       const b = e.target.closest('[data-action]');
       if (!b || b.disabled) return;
       const fn = actions[b.dataset.action];
-      if (fn) { if (b.dataset.action !== 'sound') Sfx.play('click'); fn(); }
+      if (fn) { if (b.dataset.action !== 'sound' && b.dataset.action !== 'music') Sfx.play('click'); fn(); }
       if (b.blur) b.blur();             // lepas fokus agar Enter Pemain 2 tidak menekan tombol ini lagi
     });
     document.addEventListener('keydown', (e) => {
@@ -2165,11 +2376,21 @@ const UI = {
   retrigger(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); },
   syncSound() {
     const on = Sfx.enabled;
+    this.syncMusic();
     document.querySelectorAll('[data-action="sound"]').forEach((b) => {
       b.setAttribute('aria-pressed', on ? 'true' : 'false');
       const ic = b.querySelector('.snd-ico'), lb = b.querySelector('.snd-lbl');
       if (ic) ic.textContent = on ? '\u{1F50A}' : '\u{1F507}';
       if (lb) lb.textContent = b.closest('#controls') ? (on ? ' Suara' : ' Senyap') : (on ? 'Suara: Hidup' : 'Suara: Mati');
+    });
+  },
+  syncMusic() {
+    const on = Music.enabled;
+    document.querySelectorAll('[data-action="music"]').forEach((b) => {
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      const ic = b.querySelector('.mus-ico'), lb = b.querySelector('.mus-lbl');
+      if (ic) ic.textContent = on ? '\u{1F3B5}' : '\u{1F507}';
+      if (lb) lb.textContent = b.closest('#controls') ? (on ? ' Musik' : ' Senyap') : (on ? 'Musik: Hidup' : 'Musik: Mati');
     });
   },
   toggleFullscreen() {
@@ -2405,6 +2626,7 @@ const UI = {
     this.lastSec = -1; this.lastCount = -1; this.tick();
     this.syncSound();
     Renderer.measure();
+    if (State.screen !== 'game' || State.status === 'ready') Renderer.resetCam();
   },
   // Layar hasil: Victory / Defeat / Seri + ringkasan; dibuat ulang tiap kali pertandingan berakhir (tanpa listener baru)
   renderResult() {
@@ -3159,7 +3381,7 @@ const Online = {
   copy(kind) {
     const text = kind === 'code' ? this.code : this.shareUrl() + (kind === 'master' ? '&role=master' : '');
     const done = () => UI.toast(kind === 'code' ? 'Kode disalin' : 'Tautan disalin');
-    if (kind !== 'code' && navigator.share) { navigator.share({ title: 'KINGDOM DUEL', text: 'Ayo duel di KINGDOM DUEL!', url: text }).catch(() => { }); return; }
+    if (kind !== 'code' && navigator.share) { navigator.share({ title: 'HOLLOWAR', text: 'Ayo duel di HOLLOWAR!', url: text }).catch(() => { }); return; }
     const fallback = () => {
       try { const t = document.createElement('textarea'); t.value = text; t.style.position = 'fixed'; t.style.opacity = '0'; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); done(); }
       catch (e) { UI.toast(kind !== 'code' ? text : 'Kode: ' + text); }
@@ -3464,17 +3686,19 @@ function frame(now) {
   Game.update(dt);
   Online.tick(dt);
   if (State.hudDirty) { State.hudDirty = false; UI.syncHud(); }   // HP benteng / energi lawan berubah (online)
+  Music.update();
   Renderer.draw();
   requestAnimationFrame(frame);
 }
 
 Sfx.init();
+Music.init();
 UI.init();
 Renderer.init();
 Input.init();
 Game.init();
 Online.initFromUrl();                                           // tautan undangan ?r=KODE → langsung ke lobi
-if (/[?&]debug\b/.test(location.search)) window.__kd = { State, Game, Online, Units, Cfg, Quiz, UI };   // hanya untuk tes
+if (/[?&]debug\b/.test(location.search)) window.__kd = { Music, Sfx, State, Game, Online, Units, Cfg, Quiz, UI };   // hanya untuk tes
 requestAnimationFrame(frame);
 })();
 </script>
